@@ -7,6 +7,10 @@ db_path = 'base.db'
 conn = sqlite3.connect(db_path)
 c = conn.cursor()
 
+c.execute('''DROP TABLE Umowa''')
+c.execute('''DROP TABLE Klient''')
+
+
 c.execute('''
           CREATE TABLE Klient
           ( id INTEGER PRIMARY KEY,

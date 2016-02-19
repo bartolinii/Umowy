@@ -41,7 +41,6 @@ class Klient():
 class Umowa():
 
     def __init__(self, ID_umowa, data_zawarcia, data_od, data_do, Cena_TV, Cena_INT, Cena_TEL, id_Klient):
-        print('in init')
         self.ID_umowa = ID_umowa
         self.data_zawarcia = data_zawarcia
         self.data_od = data_od
@@ -122,9 +121,8 @@ class UmowaRepository(Repository):
             c = self.conn.cursor()
             c.execute("UPDATE UMOWA SET data_zawarcia=?, data_od=?, data_do=?, Cena_TV=?, Cena_INT=?, Cena_TEL=?, id_Klient=? WHERE ID_umowa=?", (umowa.data_zawarcia, umowa.data_od, umowa.data_do, umowa.Cena_TV, umowa.Cena_INT, umowa.Cena_TEL, umowa.id_Klient, umowa.ID_umowa))
             self.conn.commit()
-
         except Exception as e:
-            raise RepositoryException('Nieudan update umowy: %s' %(umowa))
+            raise RepositoryException('Nieudany update umowy: %s' %(umowa))
 
 
     def add(self, umowa):
@@ -133,7 +131,7 @@ class UmowaRepository(Repository):
             c.execute('INSERT INTO UMOWA(ID_umowa, data_zawarcia, data_od, data_do, Cena_TV, Cena_INT, Cena_TEL, id_Klient) VALUES(?, ?, ?, ?, ?, ?, ?, ?)', (umowa.ID_umowa, umowa.data_zawarcia, umowa.data_od, umowa.data_do, umowa.Cena_TV, umowa.Cena_INT, umowa.Cena_TEL, umowa.id_Klient))
             self.conn.commit()
         except Exception as e:
-            raise RepositoryException('Nieudane dodanie umowy: %s' %(umowa))
+            raise RepositoryException('Nieudane dodanie umowy: %s' %(umowa.ID_umowa))
 
 
 class KlientRepository(Repository):
@@ -159,23 +157,22 @@ class KlientRepository(Repository):
             raise RepositoryException('Nieudane dodanie Klienta: %s' %(klient.id))
 
     def getById(self, id):
-        """Get invoice by id
-        """
+
         try:
             c = self.conn.cursor()
             c.execute("SELECT * FROM Klient WHERE id=?", (id,))
-            inv_row = c.fetchone()
-            klient = Klient(id=id,imie=inv_row[1],nazwisko=inv_row[2],PESEL=inv_row[3])
-            print(klient)
-            if inv_row == None:
+            kli_row = c.fetchone()
+            if kli_row == None:
                 klient = None
+                raise RepositoryException()
             else:
+                klient = Klient(id=id,imie=kli_row[1],nazwisko=kli_row[2],PESEL=kli_row[3])
+                print(klient)
                 umowa_items_rows = UmowaRepository().getByKlientId(id)
                 klient.umowy = umowa_items_rows
         except Exception as e:
-            raise e
+            raise RepositoryException('W bazie brak Klienta: %s' %(id))
         return klient
-
 
 
     def delete(self, klient):
@@ -183,14 +180,13 @@ class KlientRepository(Repository):
             c = self.conn.cursor()
             #UmowaRepository().deleteByKlientId(klient.id)
             c.execute('DELETE FROM Klient WHERE id=?', (klient,))
-            #
             c.execute('DELETE FROM Umowa WHERE id_Klient=?', (klient,))
         except Exception as e:
             raise RepositoryException('Blad w usuwaniu klienta %s' %str(klient))
 
     def update(self, klient):
         c = self.conn.cursor()
-        c.execute("UPDATE KLIENT SET imie=?, nazwisko=?, PESEL=? WHERE id=?", (klient.imie, klient.nazwisko, klient.PESEL,klient.id))
+        c.execute("UPDATE KLIENT SET imie=?, nazwisko=?, PESEL=? WHERE id=?", (klient.imie, klient.nazwisko, klient.PESEL, klient.id))
         self.conn.commit()
 
 if __name__ == '__main__':
@@ -198,31 +194,32 @@ if __name__ == '__main__':
     #Klient
 
     #ADD
-    with KlientRepository() as klient_repository:
-        add_klient=Klient(id=12, imie='Lucjan', nazwisko='Panek',PESEL='66041503563', umowy=[Umowa(ID_umowa=13, data_zawarcia='2015-01-01', data_od='2015-02-01', data_do='2016-02-01', Cena_TV='50', Cena_INT='60', Cena_TEL='40', id_Klient=14)])
-        klient_repository.add(add_klient)
+    #with KlientRepository() as klient_repository:
+        #add_klient=Klient(id=12, imie='Lucjan', nazwisko='Panek',PESEL='66041503563', umowy=[Umowa(ID_umowa=13, data_zawarcia='2015-01-01', data_od='2015-02-01', data_do='2016-02-01', Cena_TV='50', Cena_INT='60', Cena_TEL='40', id_Klient=14)])
+        #klient_repository.add(add_klient)
 
     #getByID
     #with KlientRepository() as klient_repository:
-            #klient_repository.getById(3)
+            #klient_repository.getById(5)
             #klient_repository.complete()
 
     #DELETE
     #with KlientRepository() as klient_repository:
-            #klient_repository.delete(2)
+            #klient_repository.delete(1)
             #klient_repository.complete()
-
+    #KlientRepository().delete(1)
+    #KlientRepository().complete()
 
     # UPDATE
     #with KlientRepository() as klient_repository:
-            #klient_repository.update(Klient(id = 1, imie='Lucjan', nazwisko='Panek',PESEL='66041503564', umowy=[]))
+            #klient_repository.update(Klient(id = 4, imie='Lucjan', nazwisko='Panek',PESEL='66041503564', umowy=[]))
             #klient_repository.complete()
 
     #UMOWA
 
     #getByKlientId OK
     #with UmowaRepository() as umowa_repository:
-            #umowa_repository.getByKlientId(3)
+            #umowa_repository.getByKlientId(10)
             #umowa_repository.complete()
 
     # DELETE OK
@@ -239,6 +236,6 @@ if __name__ == '__main__':
 
     # ADD OK
     #with UmowaRepository() as umowa_repository:
-             #umowaADD = Umowa(ID_umowa= 9, data_zawarcia="2015-01-04", data_od="2015-01-04", data_do="2016-01-04", Cena_TV="30", Cena_INT="40", Cena_TEL="50", id_Klient=3)
-             #umowa_repository.add(umowaADD)
-             #umowa_repository.complete()
+            # umowaADD = Umowa(ID_umowa= 9, data_zawarcia="2015-01-04", data_od="2015-01-04", data_do="2016-01-04", Cena_TV="30", Cena_INT="40", Cena_TEL="50", id_Klient=3)
+            # umowa_repository.add(umowaADD)
+            # umowa_repository.complete()
